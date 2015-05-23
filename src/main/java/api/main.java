@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -26,122 +27,286 @@ import org.json.simple.parser.JSONParser;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.InstanceCreator;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 /**
  * Created by Thomas on 21/05/2015.
  */
 
 public class main {
+    private static final int MYTHREADS = 10;
     public Gson gson = new Gson();
+
     public static void main(String [] args){
+        ExecutorService executor = Executors.newFixedThreadPool(MYTHREADS);
         String prefex = "https://euw.api.pvp.net";
         String sufex = "/api/lol/euw/v2.2/matchhistory/35080577";
         String key = "2d33b014-b236-4d80-88e4-60567ae5026c";
         String url = prefex+sufex+"?api_key="+key;
+
+        String beginIndex, endIndex;
         main main = new main();
-        main.makeCall(url);
+
+        String[] urls = new String[10];
+        for (int i = 0; i < 10; i++) {
+            int x = i * 10;
+            beginIndex = Integer.toString(x);
+            endIndex = Integer.toString(x + 10);
+            urls[i] = url + "&beginIndex=" + beginIndex + "&endIndex=" + endIndex;
+            //main.makeCall(urls[i]);
+            //main.makeCall(urls[i]);
+            Runnable worker = new MyRunnable(urls[i]);
+            executor.execute(worker);
+
+        }
+        while (!executor.isTerminated()) {
+
+        }
+        System.out.println("\nFinished all threads");
+
 
        // System.out.println(json);
     }
-    public main(){
 
-    }
-    public JSONObject makeCall(String urll){
-
-        try {
-
-            URL url = new URL(urll);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("Accept", "application/json");
-
-            if (conn.getResponseCode() != 200) {
-                throw new RuntimeException("Failed : HTTP error code : "
-                        + conn.getResponseCode());
-            }
-
-            BufferedReader br = new BufferedReader(new InputStreamReader(
-                    (conn.getInputStream())));
-
-            String output;
-            System.out.println("Output from Server .... \n");
-            while ((output = br.readLine()) != null) {
-                Object obj = JSONValue.parse(output);
-                JSONObject json=(JSONObject)obj;
-                getMatchObject(json);
-
-                //JSONObject json = (JSONObject) new JSONParser().parse(output);
-                //System.out.println(output);
-                return null;
-
-            }
-
-            conn.disconnect();
-
-        } catch (MalformedURLException e) {
-
-            e.printStackTrace();
-
-        } catch (IOException e) {
-
-            e.printStackTrace();
-
-        }
-
-        return null;
-    }
-
-    private String getMatchObject(JSONObject json){
+    private static String getMatchObject(JSONObject json) {
 
         //System.out.println(json);
-        JSONArray  matches=(JSONArray ) json.get("matches");
-        JSONObject match=(JSONObject)matches.get(0);
-        JSONArray  participants=(JSONArray ) match.get("participants");
-        JSONObject participant=(JSONObject)participants.get(0);
-        System.out.println(participant.get("stats"));
+        JSONArray matches = (JSONArray) json.get("matches");
+        for (int i = 0; i < 10; i++) {
+            JSONObject matchJSON = (JSONObject) matches.get(i);
+            JSONArray participants = (JSONArray) matchJSON.get("participants");
+            JSONObject participant = (JSONObject) participants.get(0);
+            JSONObject statsJSON = (JSONObject) participant.get("stats");
+            JSONObject timelineJSON = (JSONObject) participant.get("timeline");
+            Gson gson = new Gson();
 
-        Gson gson = new Gson();
-        //GsonBuilder gsonBuilder = new GsonBuilder();
-        //gsonBuilder.registerTypeAdapter(Stats.class, new StatsInstanceCreator());
-        //Gson gson = gsonBuilder.create();
-        JSONObject stats= participant.get("stats");
-        Stats obj = gson.fromJson(stats.toJSONString(), participant.class);
-
-
-
-
-
-        System.out.println(participant);
+            Match match = gson.fromJson(matchJSON.toJSONString(), Match.class);
+            Stats stats = gson.fromJson(statsJSON.toJSONString(), Stats.class);
+            Timeline timeline = gson.fromJson(timelineJSON.toJSONString(), Timeline.class);
+            System.out.println(timeline.getLane());
+            match.stats = stats;
+        }
         return null;
 
+    }
+
+    public static class MyRunnable implements Runnable {
+        private final String url;
+
+        MyRunnable(String url) {
+            this.url = url;
+        }
+
+        @Override
+        public void run() {
+            try {
+
+                URL url = new URL(this.url);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Accept", "application/json");
+
+                if (conn.getResponseCode() != 200) {
+                    throw new RuntimeException("Failed : HTTP error code : "
+                            + conn.getResponseCode());
+                }
+
+                BufferedReader br = new BufferedReader(new InputStreamReader(
+                        (conn.getInputStream())));
+
+                String output;
+                System.out.println("Output from Server .... \n");
+                while ((output = br.readLine()) != null) {
+                    Object obj = JSONValue.parse(output);
+                    JSONObject json = (JSONObject) obj;
+                    getMatchObject(json);
+
+                    //JSONObject json = (JSONObject) new JSONParser().parse(output);
+                    //System.out.println(output);
+                    //return null;
+
+                }
+
+                conn.disconnect();
+
+            } catch (MalformedURLException e) {
+
+                e.printStackTrace();
+
+            } catch (IOException e) {
+
+                e.printStackTrace();
+
+            }
+        }
     }
 
 }
-/*
-class StatsInstanceCreator implements InstanceCreator<Stats> {
-    public Stats createInstance(Type type)
-    {
-        return new Stats("None");
-    }
-}*/
 
-class participant{
+class Participant {
     public Stats stats;
     //public Timeline timeline;
 }
-class Timeline{
-    public LolTime csDiffPerMinDeltas;
-    public LolTime damageTakenPerMinDeltas;
-    public LolTime damageTakenDiffPerMinDeltas;
-    public LolTime xpPerMinDeltas;
-    public LolTime xpDiffPerMinDeltas;
-    public LolTime creepsPerMinDeltas;
-    public LolTime goldPerMinDeltas;
+
+class Timeline {
+
+    public CsDiffPerMinDeltas csDiffPerMinDeltas;
+    public DamageTakenPerMinDeltas damageTakenPerMinDeltas;
+    private XpPerMinDeltas xpPerMinDeltas;
+    private XpDiffPerMinDeltas xpDiffPerMinDeltas;
+    private CreepsPerMinDeltas creepsPerMinDeltas;
+    private GoldPerMinDeltas goldPerMinDeltas;
+    private Enums.role role;
+    private Enums.lane lane;
+
+    public CsDiffPerMinDeltas getCsDiffPerMinDeltas() {
+        return csDiffPerMinDeltas;
+    }
+
+    public DamageTakenPerMinDeltas getDamageTakenPerMinDeltas() {
+        return damageTakenPerMinDeltas;
+    }
+
+    public void setDamageTakenPerMinDeltas(CsDiffPerMinDeltas cs) {
+        csDiffPerMinDeltas = cs;
+    }
+
+    public void setDamageTakenPerMinDeltas(DamageTakenPerMinDeltas cs) {
+        damageTakenPerMinDeltas = cs;
+    }
+
+    public XpPerMinDeltas getXpPerMinDeltas() {
+        return xpPerMinDeltas;
+    }
+
+    public void setXpPerMinDeltas(XpPerMinDeltas cs) {
+        xpPerMinDeltas = cs;
+    }
+
+    public XpDiffPerMinDeltas getXpDiffPerMinDeltas() {
+        return xpDiffPerMinDeltas;
+    }
+
+    public void setXpDiffPerMinDeltas(XpDiffPerMinDeltas cs) {
+        xpDiffPerMinDeltas = cs;
+    }
+
+    public CreepsPerMinDeltas getCreepsPerMinDeltas() {
+        return creepsPerMinDeltas;
+    }
+
+    public void setCreepsPerMinDeltas(CreepsPerMinDeltas cs) {
+        creepsPerMinDeltas = cs;
+    }
+
+    public GoldPerMinDeltas getGoldPerMinDeltas() {
+        return goldPerMinDeltas;
+    }
+
+    public void setGoldPerMinDeltas(GoldPerMinDeltas cs) {
+        goldPerMinDeltas = cs;
+    }
+
+    public Enums.role getRole() {
+        return role;
+    }
+
+    public void setRole(Enums.role role) {
+        this.role = role;
+    }
+
+    public Enums.lane getLane() {
+        return lane;
+    }
+
+    public void setLane(Enums.lane lane) {
+        this.lane = lane;
+    }
+
+    public static class Time {
+        private float thirtyToEnd, twentyToThirty, tenToTwenty, zeroToTen;
+
+        public float getZeroToTen() {
+            return zeroToTen;
+        }
+
+        public void setZeroToTen(float i) {
+            zeroToTen = i;
+        }
+
+        public float getTenToTwenty() {
+            return tenToTwenty;
+        }
+
+        public void setTenToTwenty(float i) {
+            tenToTwenty = i;
+        }
+
+        public float getTwentyToThirty() {
+            return twentyToThirty;
+        }
+
+        public void setTwentyToThirty(float i) {
+            twentyToThirty = i;
+        }
+
+        public float getThirtyToEnd() {
+            return thirtyToEnd;
+        }
+
+        public void setThirtyToEnd(float i) {
+            thirtyToEnd = i;
+        }
+    }
+
+    public static class CsDiffPerMinDeltas extends Time {
+    }
+
+    public static class DamageTakenPerMinDeltas extends Time {
+    }
+
+    public static class DamageTakenDiffPerMinDeltas extends Time {
+    }
+
+    public static class XpPerMinDeltas extends Time {
+    }
+
+    public static class XpDiffPerMinDeltas extends Time {
+    }
+
+    public static class CreepsPerMinDeltas extends Time {
+    }
+
+    public static class GoldPerMinDeltas extends Time {
+    }
+
 }
 class LolTime{
     public float thirtyToEnd;
     public float twentyToThirty;
     public float tenToTwenty;
     public float zeroToTen;
+
+
+}
+
+class Match {
+    public Stats stats;
+
+
+    public String platformId;
+    public long matchCreation;
+    public int matchDuration;
+    public String queueType;
+    public String season;
+    public int mapId;
+    public String region;
+    public long matchId;
+    public String matchMode;
+    //public Participant participants;
+
 
 }
 class Stats{
@@ -153,7 +318,7 @@ class Stats{
     public int towerKills;
     public int largestMultiKill;
     public int goldEarned;
-    public int firstInhibitorKill;
+    public boolean firstInhibitorKill;
     public int physicalDamageTaken;
     public int totalPlayerScore;
     public int champLevel;
@@ -166,33 +331,36 @@ class Stats{
     public int wardsKilled;
     public int pentaKills;
     public int largestCriticalStrike;
+
     public int totalTimeCrowdControlDealt;
-    public int firstTowerKill;
+    public boolean firstTowerKill;
     public int magicDamageDealt;
     public int totalScoreRank;
-    public int winner;
+    public boolean winner;
+
     public int wardsPlaced;
     public int totalDamageDealt;
     public int largestKillingSpree;
     public int totalDamageDealtToChampions;
     public int physicalDamageDealtToChampions;
     public int neutralMinionsKilledTeamJungle;
-    public int firstInhibitorAssist;
+
+    public boolean firstInhibitorAssist;
     public int objectivePlayerScore;
     public int visionWardsBoughtInGame;
     public int kills;
     public int minionsKilled;
-    public int firstTowerAssist;
+    public boolean firstTowerAssist;
     public int combatPlayerScore;
     public int inhibitorKills;
     public int trueDamageTaken;
-    public int firstBloodAssist;
+    public boolean firstBloodAssist;
     public int assists;
     public int goldSpent;
     public int totalHeal;
     public int unrealKills;
     public int physicalDamageDealt;
-    public int firstBloodKill;
+    public boolean firstBloodKill;
     public int sightWardsBoughtInGame;
     public int killingSprees;
     public int neutralMinionsKilledEnemyJungle;
@@ -205,5 +373,12 @@ class Stats{
     public int item6;
     public int item5;
 
+    public int getKills() {
+        return kills;
+    }
 
+    @Override
+    public String toString() {
+        return "" + kills;
+    }
 }

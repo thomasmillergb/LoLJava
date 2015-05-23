@@ -23,14 +23,14 @@ public class json {
 
     private int data1 = 100;
     private String data2 = "hello";
-    private String data3 = "ff";
+    private String matche;
     private List<JSONObject> matches = new ArrayList<JSONObject>() {};
 
 
 
     @Override
     public String toString() {
-        return "DataObject [data1=" + data1 + ", data2=" + data2+ ", data3=" + data3 + ", list="
+        return "DataObject [matche=" + data1 + ", data2=" + data2 + ", data3=" + matche + ", list="
                 + matches + "]";
     }
 }
@@ -51,13 +51,7 @@ class MatchHistory {
     }
 }
 
-class Match{
-    //private participants;
-    private int matchId;
-    public String toString() {
-        return "test "+Integer.toString(matchId);
-    }
-}
+
 class GsonExample {
     public static void main(String[] args) {
 
