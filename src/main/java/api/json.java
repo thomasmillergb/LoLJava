@@ -30,7 +30,7 @@ public class json {
 
     @Override
     public String toString() {
-        return "DataObject [matche=" + data1 + ", data2=" + data2 + ", data3=" + matche + ", list="
+        return "DataObject [matche=" + data1 + ", data2=" + data2+ ", data3=" + matche + ", list="
                 + matches + "]";
     }
 }

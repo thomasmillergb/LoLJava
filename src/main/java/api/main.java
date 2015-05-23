@@ -27,7 +27,6 @@ import org.json.simple.parser.JSONParser;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.InstanceCreator;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -36,8 +35,8 @@ import java.util.concurrent.Executors;
  */
 
 public class main {
-    private static final int MYTHREADS = 10;
     public Gson gson = new Gson();
+    private static final int MYTHREADS = 10;
 
     public static void main(String [] args){
         ExecutorService executor = Executors.newFixedThreadPool(MYTHREADS);
@@ -46,15 +45,15 @@ public class main {
         String key = "2d33b014-b236-4d80-88e4-60567ae5026c";
         String url = prefex+sufex+"?api_key="+key;
 
-        String beginIndex, endIndex;
+        String beginIndex,endIndex;
         main main = new main();
 
         String[] urls = new String[10];
-        for (int i = 0; i < 10; i++) {
-            int x = i * 10;
-            beginIndex = Integer.toString(x);
-            endIndex = Integer.toString(x + 10);
-            urls[i] = url + "&beginIndex=" + beginIndex + "&endIndex=" + endIndex;
+        for(int i = 0; i<10; i++) {
+            int x = i *10;
+            beginIndex= Integer.toString(x);
+            endIndex= Integer.toString(x+10);
+            urls[i] = url +"&beginIndex="+beginIndex+"&endIndex="+endIndex;
             //main.makeCall(urls[i]);
             //main.makeCall(urls[i]);
             Runnable worker = new MyRunnable(urls[i]);
@@ -68,28 +67,6 @@ public class main {
 
 
        // System.out.println(json);
-    }
-
-    private static String getMatchObject(JSONObject json) {
-
-        //System.out.println(json);
-        JSONArray matches = (JSONArray) json.get("matches");
-        for (int i = 0; i < 10; i++) {
-            JSONObject matchJSON = (JSONObject) matches.get(i);
-            JSONArray participants = (JSONArray) matchJSON.get("participants");
-            JSONObject participant = (JSONObject) participants.get(0);
-            JSONObject statsJSON = (JSONObject) participant.get("stats");
-            JSONObject timelineJSON = (JSONObject) participant.get("timeline");
-            Gson gson = new Gson();
-
-            Match match = gson.fromJson(matchJSON.toJSONString(), Match.class);
-            Stats stats = gson.fromJson(statsJSON.toJSONString(), Stats.class);
-            Timeline timeline = gson.fromJson(timelineJSON.toJSONString(), Timeline.class);
-            System.out.println(timeline.getLane());
-            match.stats = stats;
-        }
-        return null;
-
     }
 
     public static class MyRunnable implements Runnable {
@@ -120,7 +97,7 @@ public class main {
                 System.out.println("Output from Server .... \n");
                 while ((output = br.readLine()) != null) {
                     Object obj = JSONValue.parse(output);
-                    JSONObject json = (JSONObject) obj;
+                    JSONObject json=(JSONObject)obj;
                     getMatchObject(json);
 
                     //JSONObject json = (JSONObject) new JSONParser().parse(output);
@@ -143,14 +120,59 @@ public class main {
         }
     }
 
+
+
+    private static String getMatchObject(JSONObject json){
+
+        //System.out.println(json);
+        JSONArray  matches=(JSONArray ) json.get("matches");
+        for(int i = 0; i<10; i++) {
+            JSONObject matchJSON = (JSONObject) matches.get(i);
+            JSONArray participants = (JSONArray) matchJSON.get("participants");
+            JSONObject participant = (JSONObject) participants.get(0);
+            JSONObject statsJSON = (JSONObject) participant.get("stats");
+            JSONObject timelineJSON = (JSONObject) participant.get("timeline");
+            Gson gson = new Gson();
+
+            Match match = gson.fromJson(matchJSON.toJSONString(), Match.class);
+            Stats stats = gson.fromJson(statsJSON.toJSONString(), Stats.class);
+            Timeline timeline = gson.fromJson(timelineJSON.toJSONString(), Timeline.class);
+            System.out.println(timeline.getLane());
+            match.stats = stats;
+        }
+        return null;
+
+    }
+
 }
 
-class Participant {
+class Participant{
     public Stats stats;
     //public Timeline timeline;
 }
+class Timeline{
 
-class Timeline {
+    public static class Time {
+        private float thirtyToEnd, twentyToThirty, tenToTwenty, zeroToTen;
+
+        public float getZeroToTen() { return zeroToTen; }
+        public float getTenToTwenty(){ return tenToTwenty; }
+        public float getTwentyToThirty() { return twentyToThirty; }
+        public float getThirtyToEnd(){ return thirtyToEnd; }
+
+        public void setZeroToTen      (float i){ zeroToTen = i;}
+        public void setTenToTwenty    (float i){ tenToTwenty = i;}
+        public void setTwentyToThirty (float i){ twentyToThirty = i;}
+        public void setThirtyToEnd    (float i){ thirtyToEnd = i;}
+    }
+    public static class CsDiffPerMinDeltas extends Time {}
+    public static class DamageTakenPerMinDeltas extends Time {}
+    public static class DamageTakenDiffPerMinDeltas extends Time {}
+    public static class XpPerMinDeltas extends Time {}
+    public static class XpDiffPerMinDeltas extends Time {}
+    public static class CreepsPerMinDeltas extends Time {}
+    public static class GoldPerMinDeltas extends Time {}
+
 
     public CsDiffPerMinDeltas csDiffPerMinDeltas;
     public DamageTakenPerMinDeltas damageTakenPerMinDeltas;
@@ -161,126 +183,24 @@ class Timeline {
     private Enums.role role;
     private Enums.lane lane;
 
-    public CsDiffPerMinDeltas getCsDiffPerMinDeltas() {
-        return csDiffPerMinDeltas;
-    }
 
-    public DamageTakenPerMinDeltas getDamageTakenPerMinDeltas() {
-        return damageTakenPerMinDeltas;
-    }
+    public CsDiffPerMinDeltas      getCsDiffPerMinDeltas(){return csDiffPerMinDeltas;}
+    public DamageTakenPerMinDeltas getDamageTakenPerMinDeltas(){return damageTakenPerMinDeltas;}
+    public XpPerMinDeltas          getXpPerMinDeltas(){return xpPerMinDeltas;}
+    public XpDiffPerMinDeltas      getXpDiffPerMinDeltas(){return xpDiffPerMinDeltas;}
+    public CreepsPerMinDeltas      getCreepsPerMinDeltas(){return creepsPerMinDeltas;}
+    public GoldPerMinDeltas        getGoldPerMinDeltas(){return goldPerMinDeltas;}
+    public Enums.role              getRole(){return role;}
+    public Enums.lane              getLane(){return lane;}
 
-    public void setDamageTakenPerMinDeltas(CsDiffPerMinDeltas cs) {
-        csDiffPerMinDeltas = cs;
-    }
-
-    public void setDamageTakenPerMinDeltas(DamageTakenPerMinDeltas cs) {
-        damageTakenPerMinDeltas = cs;
-    }
-
-    public XpPerMinDeltas getXpPerMinDeltas() {
-        return xpPerMinDeltas;
-    }
-
-    public void setXpPerMinDeltas(XpPerMinDeltas cs) {
-        xpPerMinDeltas = cs;
-    }
-
-    public XpDiffPerMinDeltas getXpDiffPerMinDeltas() {
-        return xpDiffPerMinDeltas;
-    }
-
-    public void setXpDiffPerMinDeltas(XpDiffPerMinDeltas cs) {
-        xpDiffPerMinDeltas = cs;
-    }
-
-    public CreepsPerMinDeltas getCreepsPerMinDeltas() {
-        return creepsPerMinDeltas;
-    }
-
-    public void setCreepsPerMinDeltas(CreepsPerMinDeltas cs) {
-        creepsPerMinDeltas = cs;
-    }
-
-    public GoldPerMinDeltas getGoldPerMinDeltas() {
-        return goldPerMinDeltas;
-    }
-
-    public void setGoldPerMinDeltas(GoldPerMinDeltas cs) {
-        goldPerMinDeltas = cs;
-    }
-
-    public Enums.role getRole() {
-        return role;
-    }
-
-    public void setRole(Enums.role role) {
-        this.role = role;
-    }
-
-    public Enums.lane getLane() {
-        return lane;
-    }
-
-    public void setLane(Enums.lane lane) {
-        this.lane = lane;
-    }
-
-    public static class Time {
-        private float thirtyToEnd, twentyToThirty, tenToTwenty, zeroToTen;
-
-        public float getZeroToTen() {
-            return zeroToTen;
-        }
-
-        public void setZeroToTen(float i) {
-            zeroToTen = i;
-        }
-
-        public float getTenToTwenty() {
-            return tenToTwenty;
-        }
-
-        public void setTenToTwenty(float i) {
-            tenToTwenty = i;
-        }
-
-        public float getTwentyToThirty() {
-            return twentyToThirty;
-        }
-
-        public void setTwentyToThirty(float i) {
-            twentyToThirty = i;
-        }
-
-        public float getThirtyToEnd() {
-            return thirtyToEnd;
-        }
-
-        public void setThirtyToEnd(float i) {
-            thirtyToEnd = i;
-        }
-    }
-
-    public static class CsDiffPerMinDeltas extends Time {
-    }
-
-    public static class DamageTakenPerMinDeltas extends Time {
-    }
-
-    public static class DamageTakenDiffPerMinDeltas extends Time {
-    }
-
-    public static class XpPerMinDeltas extends Time {
-    }
-
-    public static class XpDiffPerMinDeltas extends Time {
-    }
-
-    public static class CreepsPerMinDeltas extends Time {
-    }
-
-    public static class GoldPerMinDeltas extends Time {
-    }
+    public void setDamageTakenPerMinDeltas (CsDiffPerMinDeltas       cs) { csDiffPerMinDeltas = cs; }
+    public void setDamageTakenPerMinDeltas (DamageTakenPerMinDeltas  cs) { damageTakenPerMinDeltas = cs; }
+    public void setXpPerMinDeltas          (XpPerMinDeltas           cs) { xpPerMinDeltas          = cs; }
+    public void setXpDiffPerMinDeltas      (XpDiffPerMinDeltas       cs) { xpDiffPerMinDeltas      = cs; }
+    public void setCreepsPerMinDeltas      (CreepsPerMinDeltas       cs) { creepsPerMinDeltas      = cs; }
+    public void setGoldPerMinDeltas        (GoldPerMinDeltas         cs) { goldPerMinDeltas        = cs; }
+    public void setRole                    (Enums.role role) { this.role = role; }
+    public void setLane                    (Enums.lane lane) { this.lane = lane; }
 
 }
 class LolTime{
@@ -291,8 +211,7 @@ class LolTime{
 
 
 }
-
-class Match {
+class Match{
     public Stats stats;
 
 
@@ -373,12 +292,12 @@ class Stats{
     public int item6;
     public int item5;
 
-    public int getKills() {
+    public int getKills(){
         return kills;
     }
 
     @Override
     public String toString() {
-        return "" + kills;
+        return ""+kills;
     }
 }
