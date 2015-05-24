@@ -1,7 +1,12 @@
 package api;
 
 
+import com.fasterxml.jackson.core.JsonFactory;
 import jdk.nashorn.internal.objects.NativeJSON;
+
+import java.util.*;
+
+import org.codehaus.jackson.map.ObjectMapper;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -16,9 +21,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.lang.reflect.Type;
-import java.util.Objects;
+
 import com.google.gson.TypeAdapter;
 import com.google.gson.TypeAdapterFactory;
+import org.codehaus.jackson.type.TypeReference;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONValue;
@@ -27,8 +33,9 @@ import org.json.simple.parser.JSONParser;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.InstanceCreator;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
+import java.util.concurrent.*;
+import java.util.stream.IntStream;
 
 /**
  * Created by Thomas on 21/05/2015.
@@ -38,7 +45,7 @@ public class main {
     public Gson gson = new Gson();
     private static final int MYTHREADS = 10;
 
-    public static void main(String [] args){
+    public static void main(String [] args) throws InterruptedException, ExecutionException, TimeoutException {
         ExecutorService executor = Executors.newFixedThreadPool(MYTHREADS);
         String prefex = "https://euw.api.pvp.net";
         String sufex = "/api/lol/euw/v2.2/matchhistory/35080577";
@@ -47,108 +54,172 @@ public class main {
 
         String beginIndex,endIndex;
         main main = new main();
-
-        String[] urls = new String[10];
-        for(int i = 0; i<10; i++) {
-            int x = i *10;
-            beginIndex= Integer.toString(x);
-            endIndex= Integer.toString(x+10);
-            urls[i] = url +"&beginIndex="+beginIndex+"&endIndex="+endIndex;
-            //main.makeCall(urls[i]);
-            //main.makeCall(urls[i]);
-            Runnable worker = new MyRunnable(urls[i]);
-            executor.execute(worker);
-
-        }
-        while (!executor.isTerminated()) {
-
-        }
-        System.out.println("\nFinished all threads");
-
-
-       // System.out.println(json);
-    }
-
-    public static class MyRunnable implements Runnable {
-        private final String url;
-
-        MyRunnable(String url) {
-            this.url = url;
-        }
-
-        @Override
-        public void run() {
-            try {
-
-                URL url = new URL(this.url);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Accept", "application/json");
-
-                if (conn.getResponseCode() != 200) {
-                    throw new RuntimeException("Failed : HTTP error code : "
-                            + conn.getResponseCode());
-                }
-
-                BufferedReader br = new BufferedReader(new InputStreamReader(
-                        (conn.getInputStream())));
-
-                String output;
-                System.out.println("Output from Server .... \n");
-                while ((output = br.readLine()) != null) {
-                    Object obj = JSONValue.parse(output);
-                    JSONObject json=(JSONObject)obj;
-                    getMatchObject(json);
-
-                    //JSONObject json = (JSONObject) new JSONParser().parse(output);
-                    //System.out.println(output);
-                    //return null;
-
-                }
-
-                conn.disconnect();
-
-            } catch (MalformedURLException e) {
-
-                e.printStackTrace();
-
-            } catch (IOException e) {
-
-                e.printStackTrace();
-
-            }
-        }
-    }
-
-
-
-    private static String getMatchObject(JSONObject json){
-
-        //System.out.println(json);
-        JSONArray  matches=(JSONArray ) json.get("matches");
-        for(int i = 0; i<10; i++) {
-            JSONObject matchJSON = (JSONObject) matches.get(i);
-            JSONArray participants = (JSONArray) matchJSON.get("participants");
-            JSONObject participant = (JSONObject) participants.get(0);
-            JSONObject statsJSON = (JSONObject) participant.get("stats");
-            JSONObject timelineJSON = (JSONObject) participant.get("timeline");
-            Gson gson = new Gson();
-
-            Match match = gson.fromJson(matchJSON.toJSONString(), Match.class);
-            Stats stats = gson.fromJson(statsJSON.toJSONString(), Stats.class);
-            Timeline timeline = gson.fromJson(timelineJSON.toJSONString(), Timeline.class);
-            System.out.println(timeline.getLane());
-            match.stats = stats;
-        }
-        return null;
+        List<String> urls= new ArrayList<>() ;
+        IntStream
+                .range(0, 10)
+                .forEach(i -> urls.add(url +"&beginIndex="+i*10+"&endIndex="+i*10+10));
+        Multithread m = new Multithread();
+        m.run(urls);
 
     }
 
 }
+class Multithread  {
+    //
+    public void run(List<String>urls) throws InterruptedException, ExecutionException, TimeoutException {
 
-class Participant{
-    public Stats stats;
-    //public Timeline timeline;
+        //List<Callable<Map<Integer,Match>>> callables =new ArrayList<Callable<Map<Integer,Match>>>(){};
+        List<Map<Long,Match>> matches =new ArrayList<Map<Long,Match>>(){};
+
+        //urls.forEach(f -> callables.add((Callable<Map<Integer, Match>>) getMatchHistory(f)));
+
+        /*
+        List<Callable<Map<Long,Match>>> callables = Arrays.asList(
+                () -> getMatchHistory(urls.get(1)),
+                () -> getMatchHistory(urls.get(2)),
+                () -> getMatchHistory(urls.get(3)));
+        */
+        /*
+        List<Callable<Map<Long,Match>>> callables = Arrays.asList(
+                () -> urls.stream());
+        */
+        /*
+        List<Callable<Map<Long,Match>>> callables = Arrays.asList(
+                .range(1, 10)
+                () -> getMatchHistory(urls.get(1)),
+        */
+        List<Callable<Map<Long, Match>>> callables = new ArrayList<Callable<Map<Long, Match>>>(){};
+        urls.forEach(f -> callables.add(() -> getMatchHistory(f)));
+
+        ExecutorService executor = Executors.newWorkStealingPool();
+
+
+        executor.invokeAll(callables)
+                .stream()
+                .map(future -> {
+                    try {
+                        return future.get();
+                    }
+                    catch (Exception e) {
+                        throw new IllegalStateException(e);
+                    }
+                })
+                .forEach(i ->matches.add(i));
+        //.forEach(System.out::println);
+        System.out.println(matches);
+
+    }
+    public int test(int i ){
+        return i;
+
+    }
+    public Map<Long,Match> getMatchHistory(String uri) {
+        Map<Long,Match> map = new HashMap<Long,Match>();
+        try {
+
+            URL url = new URL(uri);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+
+            if (conn.getResponseCode() != 200) {
+                throw new RuntimeException("Failed : HTTP error code : "
+                        + conn.getResponseCode());
+            }
+
+            BufferedReader br = new BufferedReader(new InputStreamReader(
+                    (conn.getInputStream())));
+
+            String output;
+            // System.out.println("Output from Server .... \n");
+            while ((output = br.readLine()) != null) {
+                Object obj = JSONValue.parse(output);
+                JSONObject json=(JSONObject)obj;
+
+                JSONArray  matches=(JSONArray ) json.get("matches");
+                //System.out.println("Output from Server .... \n");
+
+                for(int i = 0; i<10; i++) {
+                    Match match = getMatchObject((JSONObject) matches.get(i));
+                    map.put(match.matchId,match);
+                }
+
+
+            }
+
+            conn.disconnect();
+
+        } catch (MalformedURLException e) {
+
+        }
+        finally {
+            return map;
+        }
+
+    }
+    private static Match getMatchObject(JSONObject matchJSON){
+
+        //System.out.println(json);
+
+
+        JSONArray participants = (JSONArray) matchJSON.get("participants");
+        JSONObject participant = (JSONObject) participants.get(0);
+        JSONObject statsJSON = (JSONObject) participant.get("stats");
+        JSONObject timelineJSON = (JSONObject) participant.get("timeline");
+        Gson gson = new Gson();
+
+        Match match = gson.fromJson(matchJSON.toJSONString(), Match.class);
+        Stats stats = gson.fromJson(statsJSON.toJSONString(), Stats.class);
+        Timeline timeline = gson.fromJson(timelineJSON.toJSONString(), Timeline.class);
+        //System.out.println(timeline.getLane());
+        match.stats = HashJSON(statsJSON);
+
+
+        // HashMap<String,Object> result =  new ObjectMapper().readValue(statsJSON.toJSONString(), HashMap.class);
+
+        return match;
+
+    }
+    public static Map<String,String> HashJSON(JSONObject json){
+
+        //String json = "{\"name\":\"mkyong\", \"age\":\"29\"}";
+
+        Map<String,String> map = new HashMap<String,String>();
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+
+            //convert JSON string to Map
+            map = mapper.readValue(json.toJSONString(),
+                    new TypeReference<HashMap<String,String>>(){});
+
+            //System.out.println(map);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        //System.out.println(map.get("kills"));
+        return map;
+    }
+
+}
+class Match{
+    public Map<String, String> stats;
+    public Timeline timeline;
+
+    public String platformId;
+    public long matchCreation;
+    public int matchDuration;
+    public String queueType;
+    public String season;
+    public int mapId;
+    public String region;
+    public long matchId;
+    public String matchMode;
+    //public Participant participants;
+
+
 }
 class Timeline{
 
@@ -174,8 +245,8 @@ class Timeline{
     public static class GoldPerMinDeltas extends Time {}
 
 
-    public CsDiffPerMinDeltas csDiffPerMinDeltas;
-    public DamageTakenPerMinDeltas damageTakenPerMinDeltas;
+    private CsDiffPerMinDeltas csDiffPerMinDeltas;
+    private DamageTakenPerMinDeltas damageTakenPerMinDeltas;
     private XpPerMinDeltas xpPerMinDeltas;
     private XpDiffPerMinDeltas xpDiffPerMinDeltas;
     private CreepsPerMinDeltas creepsPerMinDeltas;
@@ -211,23 +282,8 @@ class LolTime{
 
 
 }
-class Match{
-    public Stats stats;
 
 
-    public String platformId;
-    public long matchCreation;
-    public int matchDuration;
-    public String queueType;
-    public String season;
-    public int mapId;
-    public String region;
-    public long matchId;
-    public String matchMode;
-    //public Participant participants;
-
-
-}
 class Stats{
 
     public int item0;
