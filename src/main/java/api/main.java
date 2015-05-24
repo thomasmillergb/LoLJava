@@ -1,38 +1,22 @@
 package api;
 
 
-import com.fasterxml.jackson.core.JsonFactory;
-import jdk.nashorn.internal.objects.NativeJSON;
-
 import java.util.*;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.lang.reflect.Type;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.TypeAdapterFactory;
 import org.codehaus.jackson.type.TypeReference;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONValue;
 
-import org.json.simple.parser.JSONParser;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.InstanceCreator;
 
 import java.util.concurrent.*;
 import java.util.stream.IntStream;
@@ -58,13 +42,13 @@ public class main {
         IntStream
                 .range(0, 10)
                 .forEach(i -> urls.add(url +"&beginIndex="+i*10+"&endIndex="+i*10+10));
-        Multithread m = new Multithread();
+        MultithreadingAPIcalls m = new MultithreadingAPIcalls();
         m.run(urls);
 
     }
 
 }
-class Multithread  {
+class MultithreadingAPIcalls {
     //
     public void run(List<String>urls) throws InterruptedException, ExecutionException, TimeoutException {
 
@@ -90,10 +74,7 @@ class Multithread  {
         */
         List<Callable<Map<Long, Match>>> callables = new ArrayList<Callable<Map<Long, Match>>>(){};
         urls.forEach(f -> callables.add(() -> getMatchHistory(f)));
-
         ExecutorService executor = Executors.newWorkStealingPool();
-
-
         executor.invokeAll(callables)
                 .stream()
                 .map(future -> {
@@ -144,14 +125,10 @@ class Multithread  {
                     Match match = getMatchObject((JSONObject) matches.get(i));
                     map.put(match.matchId,match);
                 }
-
-
             }
-
             conn.disconnect();
 
         } catch (MalformedURLException e) {
-
         }
         finally {
             return map;
@@ -172,7 +149,7 @@ class Multithread  {
         Match match = gson.fromJson(matchJSON.toJSONString(), Match.class);
         Stats stats = gson.fromJson(statsJSON.toJSONString(), Stats.class);
         Timeline timeline = gson.fromJson(timelineJSON.toJSONString(), Timeline.class);
-        //System.out.println(timeline.getLane());
+        System.out.println(timeline.getCsDiffPerMinDeltas().getZeroToTen());
         match.stats = HashJSON(statsJSON);
 
 
