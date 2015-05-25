@@ -160,7 +160,7 @@ class MultithreadingAPIcalls {
     }
     public static Map<String,String> HashJSON(JSONObject json){
 
-        //String json = "{\"name\":\"mkyong\", \"age\":\"29\"}";
+
 
         Map<String,String> map = new HashMap<String,String>();
         ObjectMapper mapper = new ObjectMapper();
