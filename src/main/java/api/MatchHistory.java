@@ -26,21 +26,23 @@ import java.util.stream.IntStream;
 
 public class MatchHistory {
     public Gson gson = new Gson();
+    private String lolID;
     private static final int MYTHREADS = 10;
 
     public static void main(String [] args) throws InterruptedException, ExecutionException, TimeoutException {
-        MatchHistory mh = new MatchHistory();
-        mh.run();
+        MatchHistory mh = new MatchHistory("35080577");
+        mh.get();
     }
-    public MatchHistory() {
+    public MatchHistory(String lolID) {
+        this.lolID = lolID;
     }
-    public Map<Long,Match> run() {
+    public Map<Long,Match> get() {
         ExecutorService executor = Executors.newFixedThreadPool(MYTHREADS);
         String prefex = "https://euw.api.pvp.net";
-        String sufex = "/api/lol/euw/v2.2/matchhistory/35080577";
+        String sufex = "/api/lol/euw/v2.2/matchhistory/" +lolID;
         String key = "2d33b014-b236-4d80-88e4-60567ae5026c";
         String url = prefex+sufex+"?api_key="+key;
-
+        //System.out.print(url);
         String beginIndex,endIndex;
 
         List<String> urls= new ArrayList<>() ;
@@ -87,10 +89,8 @@ class MultithreadingAPIcalls {
         //System.out.println(mergeMatches(matches));
         Map<Long,Match>  matchMap =mergeMatches(matches);
 
-        Gson gson = new Gson();
-        String json = gson.toJson(matchMap);
-        System.out.println(json);
-        return mergeMatches(matches);
+
+        return matchMap;
     }
     public Map<Long,Match> mergeMatches(List<Map<Long,Match>> matches){
         Map<Long,Match> map = new TreeMap<Long,Match>();
@@ -188,26 +188,7 @@ class MultithreadingAPIcalls {
     }
 
 }
-class Match{
-    public Map<String, String> stats;
-    public Timeline timeline;
 
-    public String platformId;
-    public long matchCreation;
-    public int matchDuration;
-    public String queueType;
-    public String season;
-    public int mapId;
-    public String region;
-    public long matchId;
-    public String matchMode;
-    //public Participant participants;
-
-    @Override
-    public String toString(){
-        return  "Kills:" +stats.get("kills")+ " matchDuration"+ matchDuration;
-    }
-}
 class Timeline{
 
     public static class Time {
