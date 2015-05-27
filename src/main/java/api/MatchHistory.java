@@ -1,23 +1,22 @@
 package api;
 
 
-import java.util.*;
-
+import com.google.gson.Gson;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import org.codehaus.jackson.type.TypeReference;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONValue;
-
-import com.google.gson.Gson;
-
+import java.util.ArrayList;
+import java.util.TreeMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.stream.IntStream;
 
@@ -25,11 +24,17 @@ import java.util.stream.IntStream;
  * Created by Thomas on 21/05/2015.
  */
 
-public class main {
+public class MatchHistory {
     public Gson gson = new Gson();
     private static final int MYTHREADS = 10;
 
     public static void main(String [] args) throws InterruptedException, ExecutionException, TimeoutException {
+        MatchHistory mh = new MatchHistory();
+        mh.run();
+    }
+    public MatchHistory() {
+    }
+    public Map<Long,Match> run() {
         ExecutorService executor = Executors.newFixedThreadPool(MYTHREADS);
         String prefex = "https://euw.api.pvp.net";
         String sufex = "/api/lol/euw/v2.2/matchhistory/35080577";
@@ -37,41 +42,33 @@ public class main {
         String url = prefex+sufex+"?api_key="+key;
 
         String beginIndex,endIndex;
-        main main = new main();
+
         List<String> urls= new ArrayList<>() ;
         IntStream
                 .range(0, 10)
                 .forEach(i -> urls.add(url +"&beginIndex="+i*10+"&endIndex="+i*10+10));
         MultithreadingAPIcalls m = new MultithreadingAPIcalls();
-        m.run(urls);
+        try {
+            return m.run(urls);
 
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (TimeoutException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
 }
 class MultithreadingAPIcalls {
     //
-    public void run(List<String>urls) throws InterruptedException, ExecutionException, TimeoutException {
+    public Map<Long,Match> run(List<String>urls) throws InterruptedException, ExecutionException, TimeoutException {
 
         //List<Callable<Map<Integer,Match>>> callables =new ArrayList<Callable<Map<Integer,Match>>>(){};
         List<Map<Long,Match>> matches =new ArrayList<Map<Long,Match>>(){};
 
-        //urls.forEach(f -> callables.add((Callable<Map<Integer, Match>>) getMatchHistory(f)));
-
-        /*
-        List<Callable<Map<Long,Match>>> callables = Arrays.asList(
-                () -> getMatchHistory(urls.get(1)),
-                () -> getMatchHistory(urls.get(2)),
-                () -> getMatchHistory(urls.get(3)));
-        */
-        /*
-        List<Callable<Map<Long,Match>>> callables = Arrays.asList(
-                () -> urls.stream());
-        */
-        /*
-        List<Callable<Map<Long,Match>>> callables = Arrays.asList(
-                .range(1, 10)
-                () -> getMatchHistory(urls.get(1)),
-        */
         List<Callable<Map<Long, Match>>> callables = new ArrayList<Callable<Map<Long, Match>>>(){};
         urls.forEach(f -> callables.add(() -> getMatchHistory(f)));
         ExecutorService executor = Executors.newWorkStealingPool();
@@ -87,15 +84,23 @@ class MultithreadingAPIcalls {
                 })
                 .forEach(i ->matches.add(i));
         //.forEach(System.out::println);
-        System.out.println(matches);
+        //System.out.println(mergeMatches(matches));
+        Map<Long,Match>  matchMap =mergeMatches(matches);
 
+        Gson gson = new Gson();
+        String json = gson.toJson(matchMap);
+        System.out.println(json);
+        return mergeMatches(matches);
     }
-    public int test(int i ){
-        return i;
+    public Map<Long,Match> mergeMatches(List<Map<Long,Match>> matches){
+        Map<Long,Match> map = new TreeMap<Long,Match>();
+        matches.forEach(l -> map.putAll(l));
+
+        return map;
 
     }
     public Map<Long,Match> getMatchHistory(String uri) {
-        Map<Long,Match> map = new HashMap<Long,Match>();
+        Map<Long,Match> map = new TreeMap<Long,Match>();
         try {
 
             URL url = new URL(uri);
@@ -149,11 +154,13 @@ class MultithreadingAPIcalls {
         Match match = gson.fromJson(matchJSON.toJSONString(), Match.class);
         Stats stats = gson.fromJson(statsJSON.toJSONString(), Stats.class);
         Timeline timeline = gson.fromJson(timelineJSON.toJSONString(), Timeline.class);
-        System.out.println(timeline.getCsDiffPerMinDeltas().getZeroToTen());
+
+
+        match.timeline = timeline;
         match.stats = HashJSON(statsJSON);
 
 
-        // HashMap<String,Object> result =  new ObjectMapper().readValue(statsJSON.toJSONString(), HashMap.class);
+        // TreeMap<String,Object> result =  new ObjectMapper().readValue(statsJSON.toJSONString(), TreeMap.class);
 
         return match;
 
@@ -162,14 +169,14 @@ class MultithreadingAPIcalls {
 
 
 
-        Map<String,String> map = new HashMap<String,String>();
+        Map<String,String> map = new TreeMap<String,String>();
         ObjectMapper mapper = new ObjectMapper();
 
         try {
 
             //convert JSON string to Map
             map = mapper.readValue(json.toJSONString(),
-                    new TypeReference<HashMap<String,String>>(){});
+                    new TypeReference<TreeMap<String,String>>(){});
 
             //System.out.println(map);
 
@@ -196,7 +203,10 @@ class Match{
     public String matchMode;
     //public Participant participants;
 
-
+    @Override
+    public String toString(){
+        return  "Kills:" +stats.get("kills")+ " matchDuration"+ matchDuration;
+    }
 }
 class Timeline{
 
