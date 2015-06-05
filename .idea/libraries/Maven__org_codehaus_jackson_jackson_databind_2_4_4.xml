@@ -1,11 +1,7 @@
 <component name="libraryTable">
   <library name="Maven: org.codehaus.jackson:jackson-databind:2.4.4">
-    <CLASSES>
-      <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/jackson/jackson-databind/2.4.4/jackson-databind-2.4.4.jar!/" />
-    </CLASSES>
-    <JAVADOC>
-      <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/jackson/jackson-databind/2.4.4/jackson-databind-2.4.4-javadoc.jar!/" />
-    </JAVADOC>
+    <CLASSES />
+    <JAVADOC />
     <SOURCES>
       <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/jackson/jackson-databind/2.4.4/jackson-databind-2.4.4-sources.jar!/" />
     </SOURCES>

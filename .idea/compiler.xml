@@ -25,5 +25,8 @@
         <module name="LoLJava" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="LoLJava" target="1.8" />
+    </bytecodeTargetLevel>
   </component>
 </project>

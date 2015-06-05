@@ -32,6 +32,7 @@ public class MatchHistory {
     public static void main(String [] args) throws InterruptedException, ExecutionException, TimeoutException {
         MatchHistory mh = new MatchHistory("35080577");
         mh.get();
+
     }
     public MatchHistory(String lolID) {
         this.lolID = lolID;
@@ -173,7 +174,6 @@ class MultithreadingAPIcalls {
         ObjectMapper mapper = new ObjectMapper();
 
         try {
-
             //convert JSON string to Map
             map = mapper.readValue(json.toJSONString(),
                     new TypeReference<TreeMap<String,String>>(){});
