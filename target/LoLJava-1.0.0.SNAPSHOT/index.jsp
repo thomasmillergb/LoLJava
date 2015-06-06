@@ -4,7 +4,12 @@
   <title>Echo Chamber</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width">
-  <link rel="import" href="/test.jsp">
+
+  <link href="resource/stylesheet/charts.css" rel="stylesheet" type="text/css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.2/d3.min.js" charset="utf-8"></script>
+  <script src="resource/js/nv.d3.js" charset="utf-8"></script>
+  <script src="resource/js/linechart.js" charset="utf-8"></script>
+  <script src="resource/js/jquery.js" charset="utf-8"></script>
 </head>
 <body>
 
@@ -19,6 +24,7 @@
 <!-- Server responses get written here -->
 <div id="messages"></div>
 
+<div id="chart1"></div>
 <!-- Script to utilise the WebSocket -->
 <script type="text/javascript">
 
@@ -49,7 +55,11 @@
     };
 
     webSocket.onmessage = function(event){
-      writeResponse(event.data);
+     // console.log(event);
+
+      if(event.data != "Connection Established")
+        creep(event.data);
+      //writeResponse(event.data);
     };
 
     webSocket.onclose = function(event){
@@ -70,6 +80,7 @@
   }
 
   function writeResponse(text){
+
     messages.innerHTML += "<br/>" + text;
   }
   nv.addGraph(function() {

@@ -11,13 +11,13 @@ public class Match {
         public Timeline timeline;
 
         public String platformId;
-        public long matchCreation;
+        public String matchCreation;
         public int matchDuration;
         public String queueType;
         public String season;
         public int mapId;
         public String region;
-        public long matchId;
+        public String matchId;
         public String matchMode;
         //public Participant participants;
 

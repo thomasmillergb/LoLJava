@@ -37,7 +37,7 @@ public class MatchHistory {
     public MatchHistory(String lolID) {
         this.lolID = lolID;
     }
-    public Map<Long,Match> get() {
+    public Map<String,Match> get() {
         ExecutorService executor = Executors.newFixedThreadPool(MYTHREADS);
         String prefex = "https://euw.api.pvp.net";
         String sufex = "/api/lol/euw/v2.2/matchhistory/" +lolID;
@@ -67,12 +67,12 @@ public class MatchHistory {
 }
 class MultithreadingAPIcalls {
     //
-    public Map<Long,Match> run(List<String>urls) throws InterruptedException, ExecutionException, TimeoutException {
+    public Map<String,Match> run(List<String>urls) throws InterruptedException, ExecutionException, TimeoutException {
 
         //List<Callable<Map<Integer,Match>>> callables =new ArrayList<Callable<Map<Integer,Match>>>(){};
-        List<Map<Long,Match>> matches =new ArrayList<Map<Long,Match>>(){};
+        List<Map<String,Match>> matches =new ArrayList<Map<String,Match>>(){};
 
-        List<Callable<Map<Long, Match>>> callables = new ArrayList<Callable<Map<Long, Match>>>(){};
+        List<Callable<Map<String, Match>>> callables = new ArrayList<Callable<Map<String, Match>>>(){};
         urls.forEach(f -> callables.add(() -> getMatchHistory(f)));
         ExecutorService executor = Executors.newWorkStealingPool();
         executor.invokeAll(callables)
@@ -88,20 +88,20 @@ class MultithreadingAPIcalls {
                 .forEach(i ->matches.add(i));
         //.forEach(System.out::println);
         //System.out.println(mergeMatches(matches));
-        Map<Long,Match>  matchMap =mergeMatches(matches);
+        Map<String,Match>  matchMap =mergeMatches(matches);
 
 
         return matchMap;
     }
-    public Map<Long,Match> mergeMatches(List<Map<Long,Match>> matches){
-        Map<Long,Match> map = new TreeMap<Long,Match>();
+    public Map<String,Match> mergeMatches(List<Map<String,Match>> matches){
+        Map<String,Match> map = new TreeMap<String,Match>();
         matches.forEach(l -> map.putAll(l));
 
         return map;
 
     }
-    public Map<Long,Match> getMatchHistory(String uri) {
-        Map<Long,Match> map = new TreeMap<Long,Match>();
+    public Map<String,Match> getMatchHistory(String uri) {
+        Map<String,Match> map = new TreeMap<String,Match>();
         try {
 
             URL url = new URL(uri);

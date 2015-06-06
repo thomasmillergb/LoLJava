@@ -36,7 +36,7 @@ public class LoLJavaServer {
         //System.out.println(jsons.get("killermillergb"));
         //APISummoner s = new APISummoner("killermillergb");
 
-        System.out.println(session.getId() + " has opened a connection");
+       // System.out.println(session.getId() + " has opened a connection");
         try {
             session.getBasicRemote().sendText("Connection Established");
 

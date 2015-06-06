@@ -19,12 +19,6 @@
           <element id="library" level="project" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.4.2" />
           <element id="library" level="project" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.4.2" />
           <element id="library" level="project" name="Maven: com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.4.2" />
-          <element id="library" level="project" name="WebSocket-1.0" />
-          <element id="file-copy" path="D:/Docs/Downloads/google-gson-2.2.4-release/google-gson-2.2.4/gson-2.2.4.jar" />
-          <element id="file-copy" path="D:/Docs/Downloads/google-gson-2.2.4-release/google-gson-2.2.4/gson-2.2.4-javadoc.jar" />
-          <element id="file-copy" path="D:/Docs/Downloads/google-gson-2.2.4-release/google-gson-2.2.4/gson-2.2.4-sources.jar" />
-          <element id="file-copy" path="D:/Docs/Downloads/java-json.jar/java-json.jar" />
-          <element id="file-copy" path="D:/Docs/Downloads/json-simple-1.1.1.jar" />
         </element>
       </element>
       <element id="directory" name="META-INF">

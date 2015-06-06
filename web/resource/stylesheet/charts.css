@@ -1,7 +1,12 @@
 /********************
  * SVG CSS
  */
-
+html, body, #chart1, svg {
+    margin: 0px;
+    padding: 0px;
+    height: 100%;
+    width: 100%;
+}
 
 svg {
     -webkit-touch-callout: none;
